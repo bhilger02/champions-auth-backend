@@ -96,10 +96,12 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // filter on Auth Code and Authentication Status = Valid
-    const baserowUrl = `https://api.baserow.io/api/database/rows/table/${tableId}/?user_field_names=true&filter__field_Auth%20Code__equal=${encodeURIComponent(
-      authCode
-    )}&filter__field_Authentication%20Status__equal=Valid`;
+  // Replace 123456 with the numeric part of your Auth Code field id (e.g. field_123456 → use 123456)
+const authFieldId = 'field_6853241';
+
+const baserowUrl = `https://api.baserow.io/api/database/rows/table/${tableId}/?user_field_names=true&filter__field_${authFieldId}__equal=${encodeURIComponent(
+  authCode
+)}`;
 
     const baserowResp = await fetch(baserowUrl, {
       headers: {
