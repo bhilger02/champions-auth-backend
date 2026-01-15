@@ -81,60 +81,64 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 2) Look up in Baserow
-    const tableId = process.env.BASEROW_TABLE_ID;
-    const apiToken = process.env.BASEROW_API_TOKEN;
+   // 2) Look up in Baserow
+const tableId = process.env.BASEROW_TABLE_ID;
+const apiToken = process.env.BASEROW_API_TOKEN;
 
-    if (!tableId || !apiToken) {
-      return {
-        statusCode: 500,
-        headers: corsHeaders,
-        body: JSON.stringify({
-          success: false,
-          message: 'Server not configured correctly.',
-        }),
-      };
-    }
+if (!tableId || !apiToken) {
+  return {
+    statusCode: 500,
+    headers: corsHeaders,
+    body: JSON.stringify({
+      success: false,
+      message: 'Server not configured correctly.',
+    }),
+  };
+}
 
-  // Replace 123456 with the numeric part of your Auth Code field id (e.g. field_123456 → use 123456)
-const authFieldId = 'field_6853241';
+// Your Auth Code field id in Baserow is field_6853241 → we use the numeric part
+const authFieldId = '6853241';
 
+// Filter ONLY by Auth Code using the field ID
 const baserowUrl = `https://api.baserow.io/api/database/rows/table/${tableId}/?user_field_names=true&filter__field_${authFieldId}__equal=${encodeURIComponent(
   authCode
 )}`;
 
-    const baserowResp = await fetch(baserowUrl, {
-      headers: {
-        Authorization: `Token ${apiToken}`,
-      },
-    });
+const baserowResp = await fetch(baserowUrl, {
+  headers: {
+    Authorization: `Token ${apiToken}`,
+  },
+});
 
-    if (!baserowResp.ok) {
-      return {
-        statusCode: 500,
-        headers: corsHeaders,
-        body: JSON.stringify({
-          success: false,
-          message: 'Error contacting authentication database.',
-        }),
-      };
-    }
+if (!baserowResp.ok) {
+  return {
+    statusCode: 500,
+    headers: corsHeaders,
+    body: JSON.stringify({
+      success: false,
+      message: 'Error contacting authentication database.',
+    }),
+  };
+}
 
-    const baserowJson = await baserowResp.json();
+const baserowJson = await baserowResp.json();
 
-    if (!baserowJson.count || baserowJson.count === 0) {
-      return {
-        statusCode: 404,
-        headers: corsHeaders,
-        body: JSON.stringify({
-          success: false,
-          message:
-            'No record found for that authentication number. Please check the number and try again.',
-        }),
-      };
-    }
+// We expect at most one row for a given Auth Code.
+// If none, treat as not found.
+if (!baserowJson.count || baserowJson.count === 0) {
+  return {
+    statusCode: 404,
+    headers: corsHeaders,
+    body: JSON.stringify({
+      success: false,
+      message:
+        'No record found for that authentication number. Please check the number and try again.',
+    }),
+  };
+}
 
-    const row = baserowJson.results[0];
+// Take the first (and ideally only) matching row
+const row = baserowJson.results[0];
 
     // Image Proof: Baserow file fields are arrays of objects with .url
 let imageUrl = null;
