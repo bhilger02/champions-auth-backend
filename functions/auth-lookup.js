@@ -135,22 +135,36 @@ exports.handler = async (event, context) => {
     const row = baserowJson.results[0];
 
     // Image Proof: Baserow file fields are arrays of objects with .url
-    let imageUrl = null;
-    const imageField = row['Image Proof'];
-    if (Array.isArray(imageField) && imageField.length > 0) {
-      imageUrl = imageField[0].url;
-    }
+let imageUrl = null;
+const imageField = row['Image Proof'];
+if (Array.isArray(imageField) && imageField.length > 0) {
+  imageUrl = imageField[0].url;
+}
 
-    const responseData = {
-      success: true,
-      item: {
-        auth_code: row['Auth Code'],
-        item_type: row['Item Type'],
-        athletes: row['Athlete(s)'],
-        status: row['Authentication Status'],
-        image_url: imageUrl,
-      },
-    };
+// Unwrap single select fields (Baserow sends them as objects)
+const rawItemType = row['Item Type'];
+const rawStatus = row['Authentication Status'];
+
+const itemType =
+  rawItemType && typeof rawItemType === 'object'
+    ? rawItemType.value || rawItemType.name || ''
+    : rawItemType;
+
+const status =
+  rawStatus && typeof rawStatus === 'object'
+    ? rawStatus.value || rawStatus.name || ''
+    : rawStatus;
+
+const responseData = {
+  success: true,
+  item: {
+    auth_code: row['Auth Code'],
+    item_type: itemType,
+    athletes: row['Athlete(s)'],
+    status: status,
+    image_url: imageUrl,
+  },
+};
 
     return {
       statusCode: 200,
